@@ -1,3 +1,10 @@
+const ATTR_POSITION_NAME = 'a_position';
+const ATTR_POSITION_LOC = 0;
+const ATTR_NORMAL_NAME = 'a_norm';
+const ATTR_NORMAL_LOC = 1;
+const ATTR_UV_NAME = 'a_uv';
+const ATTR_UV_LOC = 2;
+
 function GLInstance(canvasId) {
 
     const canvas = document.getElementById(canvasId);
@@ -6,6 +13,8 @@ function GLInstance(canvasId) {
     if (!gl) {
         throw (new Error("Unable to initialize WebGL!"));
     }
+
+    gl.mMeshCache = []; // Cache all the mesh structs, easy to unload buffer if they all exist in one place
 
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -33,54 +42,117 @@ function GLInstance(canvasId) {
         return buf;
     };
 
+    gl.fCreateMeshVAO = function(name, aryInd, aryVert, aryNorm, aryUV) {
+        const rtn = { drawMode: gl.TRIANGLES };
+
+        // Create and bind vao
+        rtn.vao = gl.createVertexArray();
+        gl.bindVertexArray(rtn.vao);
+
+        // Set up vertices
+        if (aryVert !== undefined && aryVert !== null) {
+            rtn.bufVertices = gl.createBuffer();
+            rtn.vertexComponentLen = 3;
+            rtn.vertexCount = aryVert.length / rtn.vertexComponentLen;
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, rtn.bufVertices);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(aryVert), gl.STATIC_DRAW);
+            gl.enableVertexAttribArray(ATTR_POSITION_LOC);
+            gl.vertexAttribPointer(ATTR_POSITION_LOC, 3, gl.FLOAT, false, 0, 0);
+        }
+
+        // Set up normals
+        if (aryNorm !== undefined && aryNorm !== null) {
+            rtn.bufNormals = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, rtn.bufNormals);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(aryNorm), gl.STATIC_DRAW);
+            gl.enableVertexAttribArray(ATTR_NORMAL_LOC);
+            gl.vertexAttribPointer(ATTR_NORMAL_LOC, 3, gl.FLOAT, false, 0, 0);
+        }
+
+        // Set up UV
+        if (aryUV !== undefined && aryUV != null) {
+            rtn.bufUV = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, rtn.bufUV);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(aryUV), gl.STATIC_DRAW);
+            gl.enableVertexAttribArray(ATTR_UV_LOC);
+            gl.vertexAttribPointer(ATTR_UV_LOC, 2, gl.FLOAT, false, 0, 0);
+        }
+
+        // Set up index
+        if (aryInd !== undefined && aryInd != null) {
+            rtn.bufIndex = gl.createBuffer();
+            rtn.indexCount = aryInd.length;
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, rtn.bufIndex);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(aryInd), gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        }
+
+        // Clean up
+        gl.bindVertexArray(null);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+        gl.mMeshCache[name] = rtn;
+        return rtn;
+    };
+
     return gl;
 }
 
-window.addEventListener('load', function() {
-    const gl = window.gl = GLInstance('canvas').fSetSize(500, 500).fClear();
+class TestShader extends Shader {
+    constructor(gl) {
+        const vertSrc = ShaderUtil.domShaderSrc('vertex_shader');
+        const fragSrc = ShaderUtil.domShaderSrc('fragment_shader');
 
-    // Link shaders together as a program
-    const shaderProg = ShaderUtil.domShaderProgram(gl, 'vertex_shader', 'fragment_shader', true);
+        super(gl, vertSrc, fragSrc);
 
-    // Get location uniforms
-    gl.useProgram(shaderProg);
+        this.uniformLoc.uPointSize = gl.getUniformLocation(this.program, 'uPointSize');
+        this.uniformLoc.uAngle = gl.getUniformLocation(this.program, 'uAngle');
 
-    const aPositionLoc = gl.getAttribLocation(shaderProg, 'a_position');
-    const uPointSizeLoc = gl.getUniformLocation(shaderProg, 'uPointSize');
-    const uAngleLoc = gl.getUniformLocation(shaderProg, 'uAngle');
+        gl.useProgram(null);
+    }
 
-    gl.useProgram(null);
+    set(size, angle) {
+        this.gl.uniform1f(this.uniformLoc.uPointSize, size);
+        this.gl.uniform1f(this.uniformLoc.uAngle, angle);
+        return this;
+    }
+}
 
-    // Set up data buffers
-    const aryVerts = new Float32Array([0, 0, 0]);
-    const bufVerts = gl.fCreateArrayBuffer(aryVerts);
-
-    window.gVertCount = aryVerts.length / 3;
-
-    // Set up for drawing
-    gl.useProgram(shaderProg);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufVerts);
-    gl.enableVertexAttribArray(aPositionLoc);
-    gl.vertexAttribPointer(aPositionLoc, 3, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    const RLoop = new RenderLoop(onRender).start();
-
+(function() {
     let gPointSize = 0;
     let gPSizeStep = 3;
     let gAngle = 0;
     let gAngleStep = (Math.PI / 180.0) * 90;
 
-    function onRender(dt) {
+    window.onRender = function(dt) {
+        const gl = window.gl;
         gPointSize += gPSizeStep * dt;
-        const size = (Math.sin(gPointSize) * 10.0) + 30.0;
-        gl.uniform1f(uPointSizeLoc, size);
 
+        const size = (Math.sin(gPointSize) * 10.0) + 30.0;
         gAngle += gAngleStep * dt;
-        gl.uniform1f(uAngleLoc, gAngle);
 
         gl.fClear();
-        gl.drawArrays(gl.POINTS, 0, window.gVertCount);
+        window.gShader.activate().set(size, gAngle).renderModel(window.gModel);
     }
+
+})();
+
+window.addEventListener('load', function() {
+    const gl = window.gl = GLInstance('canvas').fSetSize(500, 500).fClear();
+
+    window.gShader = new TestShader(gl);
+
+    const mesh = gl.fCreateMeshVAO('dots', null, [
+        0, 0, 0,
+        0.1, 0.1, 0,
+        0.1, -0.1, 0,
+        -0.1, 0.1, 0,
+        -0.1, -0.1, 0
+    ]);
+    mesh.drawMode = gl.POINTS;
+
+    window.gModel = new Model(mesh);
+
+    window.RLoop = new RenderLoop(onRender).start();
 });

@@ -15,15 +15,13 @@
 </style>
 <canvas id="canvas"></canvas>
 <script id="vertex_shader" type="x-shader/x-vertex">#version 300 es
-
   in vec3 a_position;
 
-  uniform float uPointSize;
+  uniform mediump float uPointSize;
   uniform float uAngle;
 
   void main(void) {
     gl_PointSize = uPointSize;
-//    gl_Position = vec4(a_position, 1.0);
     gl_Position = vec4(
         cos(uAngle) * 0.8 + a_position.x,
         sin(uAngle) * 0.8 + a_position.y,
@@ -32,16 +30,19 @@
 
 </script>
 <script id="fragment_shader" type="x-shader/x-fragment">#version 300 es
-
   precision mediump float;
+
+  uniform float uPointSize;
 
   out vec4 finalColor;
   void main(void) {
-    finalColor = vec4(0.0, 0.0, 0.0, 1.0);
+    float c = (40.0 - uPointSize) / 20.0;
+    finalColor = vec4(c, c, c, 1.0);
   }
 
 </script>
 <script src="shader.js"></script>
 <script src="renderloop.js"></script>
+<script src="model.js"></script>
 <script src="index.js"></script>
 </body>
