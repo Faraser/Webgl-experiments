@@ -100,59 +100,30 @@ function GLInstance(canvasId) {
 }
 
 class TestShader extends Shader {
-    constructor(gl) {
+    constructor(gl, aryColor) {
         const vertSrc = ShaderUtil.domShaderSrc('vertex_shader');
         const fragSrc = ShaderUtil.domShaderSrc('fragment_shader');
 
         super(gl, vertSrc, fragSrc);
 
-        this.uniformLoc.uPointSize = gl.getUniformLocation(this.program, 'uPointSize');
-        this.uniformLoc.uAngle = gl.getUniformLocation(this.program, 'uAngle');
+        const uColor = gl.getUniformLocation(this.program, 'uColor');
+        gl.uniform3fv(uColor, aryColor);
 
         gl.useProgram(null);
     }
-
-    set(size, angle) {
-        this.gl.uniform1f(this.uniformLoc.uPointSize, size);
-        this.gl.uniform1f(this.uniformLoc.uAngle, angle);
-        return this;
-    }
 }
 
-(function() {
-    let gPointSize = 0;
-    let gPSizeStep = 3;
-    let gAngle = 0;
-    let gAngleStep = (Math.PI / 180.0) * 90;
-
-    window.onRender = function(dt) {
-        const gl = window.gl;
-        gPointSize += gPSizeStep * dt;
-
-        const size = (Math.sin(gPointSize) * 10.0) + 30.0;
-        gAngle += gAngleStep * dt;
-
-        gl.fClear();
-        window.gShader.activate().set(size, gAngle).renderModel(window.gModel);
-    }
-
-})();
+function onRender(dt) {
+    gl.fClear();
+    window.gShader.activate().renderModel(window.gModel);
+}
 
 window.addEventListener('load', function() {
     const gl = window.gl = GLInstance('canvas').fSetSize(500, 500).fClear();
 
-    window.gShader = new TestShader(gl);
+    window.gShader = new TestShader(gl, [0.8,0.8,0.8, 1,0,0, 0,1,0, 0,0,1]);
 
-    const mesh = gl.fCreateMeshVAO('dots', null, [
-        0, 0, 0,
-        0.1, 0.1, 0,
-        0.1, -0.1, 0,
-        -0.1, 0.1, 0,
-        -0.1, -0.1, 0
-    ]);
-    mesh.drawMode = gl.POINTS;
-
-    window.gModel = new Model(mesh);
+    window.gModel = new Model(Primitives.GridAxis.createMesh(gl));
 
     window.RLoop = new RenderLoop(onRender).start();
 });
