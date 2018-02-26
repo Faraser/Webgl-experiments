@@ -34,6 +34,10 @@ function GLInstance(canvasId) {
         return this;
     };
 
+    gl.fFitScreen = function(wp = 1, hp = 1) {
+        return this.fSetSize(window.innerWidth * wp, window.innerHeight * hp);
+    };
+
     gl.fCreateArrayBuffer = function(floatAry, isStatic = true) {
         const buf = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -117,8 +121,7 @@ function onRender(dt) {
     window.gCamera.updateViewMatrix();
     window.gl.fClear();
 
-
-    window.gShader.activate()
+    window.gridShader.activate()
         .setCameraMatrix(window.gCamera.viewMatrix)
         .renderModel(window.gModel.preRender());
 }
@@ -128,12 +131,10 @@ window.addEventListener('load', function() {
 
     window.gCamera = new Camera(gl);
     window.gCamera.transform.position.set(0, 1, 3);
-    window.gCameraCtrl = new CameraController(gl,window.gCamera);
+    window.gCameraCtrl = new CameraController(gl, window.gCamera);
 
-    window.gShader = new TestShader(gl, [0.8,0.8,0.8, 1,0,0, 0,1,0, 0,0,1]);
-    window.gShader.activate().setPerspective(gCamera.projectionMatrix).deactivate();
-
-    window.gModel = new Model(Primitives.GridAxis.createMesh(gl));
+    window.gridShader = new GridAxisShader(gl, window.gCamera.projectionMatrix);
+    window.gModel = new Model(Primitives.GridAxis.createMesh(gl, true));
 
     window.RLoop = new RenderLoop(onRender).start();
 });
