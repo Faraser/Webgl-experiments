@@ -4,7 +4,7 @@ class Transform {
         this.position = new Vector3(0, 0, 0);
         this.scale = new Vector3(1, 1, 1);
         this.rotation = new Vector3(0, 0, 0);
-        this.mathView = new Matrix4();
+        this.matView = new Matrix4();
         this.matNormal = new Float32Array(9);
 
         // Direction vectors
@@ -14,7 +14,7 @@ class Transform {
     }
 
     updateMatrix() {
-        this.mathView.reset()
+        this.matView.reset()
             .vtranslate(this.position)
             .rotateX(this.rotation.x * Transform.deg2Rad)
             .rotateZ(this.rotation.z * Transform.deg2Rad)
@@ -22,26 +22,26 @@ class Transform {
             .vscale(this.scale);
 
         // Calculate the Normal Matrix which doesn't need translate, then transpose and inverses the mat4 to mat3
-        Matrix4.normalMat3(this.matNormal, this.mathView.raw);
+        Matrix4.normalMat3(this.matNormal, this.matView.raw);
 
         // Determine direction after all the transformations
-        Matrix4.transformVec4(this.forward, [0, 0, 1, 0], this.mathView.raw); // Z
-        Matrix4.transformVec4(this.up, [0, 1, 0, 0], this.mathView.raw); // Y
-        Matrix4.transformVec4(this.right, [1, 0, 0, 0], this.mathView.raw); // X
+        Matrix4.transformVec4(this.forward, [0, 0, 1, 0], this.matView.raw); // Z
+        Matrix4.transformVec4(this.up, [0, 1, 0, 0], this.matView.raw); // Y
+        Matrix4.transformVec4(this.right, [1, 0, 0, 0], this.matView.raw); // X
 
-        return this.mathView.raw;
+        return this.matView.raw;
     }
 
     updateDirection() {
-        Matrix4.transformVec4(this.forward, [0, 0, 1, 0], this.mathView.raw);
-        Matrix4.transformVec4(this.up, [0, 1, 0, 0], this.mathView.raw);
-        Matrix4.transformVec4(this.right, [1, 0, 0, 0], this.mathView.raw);
+        Matrix4.transformVec4(this.forward, [0, 0, 1, 0], this.matView.raw);
+        Matrix4.transformVec4(this.up, [0, 1, 0, 0], this.matView.raw);
+        Matrix4.transformVec4(this.right, [1, 0, 0, 0], this.matView.raw);
 
         return this;
     }
 
     getViewMatrix() {
-        return this.mathView.raw;
+        return this.matView.raw;
     }
 
     getNormalMatrix() {

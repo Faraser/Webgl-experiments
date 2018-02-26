@@ -114,30 +114,26 @@ class TestShader extends Shader {
 }
 
 function onRender(dt) {
-    gl.fClear();
-
-    const p = window.gModel.transform.position;
-    const angle = Math.atan2(p.y, p.x) + (1 * dt);
-    const radius = Math.sqrt(p.x * p.x + p.y * p.y);
-    const scale = Math.max(0.2, Math.abs(Math.sin(angle)) * 1.2);
+    window.gCamera.updateViewMatrix();
+    window.gl.fClear();
 
 
-    window.gShader.activate().renderModel(window.gModel
-        .setScale(scale, scale / 4, 1)
-        .setPosition(radius * Math.cos(angle), radius * Math.sin(angle), 0)
-        .addRotation(30 * dt, 60 * dt, 15 * dt)
-        .preRender());
+    window.gShader.activate()
+        .setCameraMatrix(window.gCamera.viewMatrix)
+        .renderModel(window.gModel.preRender());
 }
 
 window.addEventListener('load', function() {
     const gl = window.gl = GLInstance('canvas').fSetSize(500, 500).fClear();
 
-    window.gShader = new TestShader(gl, [0.8,0.8,0.8, 1,0,0, 0,1,0, 0,0,1]);
+    window.gCamera = new Camera(gl);
+    window.gCamera.transform.position.set(0, 1, 3);
+    window.gCameraCtrl = new CameraController(gl,window.gCamera);
 
-    window.gModel = new Model(Primitives.GridAxis.createMesh(gl))
-        .setScale(0.4, 0.4, 0.4)
-        .setRotation(0, 0, 45)
-        .setPosition(0.8, 0.8, 0);
+    window.gShader = new TestShader(gl, [0.8,0.8,0.8, 1,0,0, 0,1,0, 0,0,1]);
+    window.gShader.activate().setPerspective(gCamera.projectionMatrix).deactivate();
+
+    window.gModel = new Model(Primitives.GridAxis.createMesh(gl));
 
     window.RLoop = new RenderLoop(onRender).start();
 });
