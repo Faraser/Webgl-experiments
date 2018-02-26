@@ -12,7 +12,6 @@ Primitives.GridAxis = class {
             // Vertical line
             let p = -half + (i * step);
             verts.push(p, half, 0, 0); // x1, y1, z1, c2
-
             verts.push(p, -half, 0, 1); // x2, y2, z2, c2
 
             // Horizontal line
