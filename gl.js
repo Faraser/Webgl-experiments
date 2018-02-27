@@ -108,5 +108,26 @@ function GLInstance(canvasId) {
         return rtn;
     };
 
+    gl.fLoadTexture = function(name, img, doYFlip) {
+        const tex = gl.createTexture();
+        if (doYFlip) {
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); // Flip the texture by the Y position
+        }
+
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img); // Push image to GPU
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); // Setup up scaling
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST); // Setup down scaling
+        gl.generateMipmap(gl.TEXTURE_2D);
+
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.mTextureCache[name] = tex;
+
+        if (doYFlip) {
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); // Stop flipping textures
+        }
+    };
+
     return gl;
 }
