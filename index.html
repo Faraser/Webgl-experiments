@@ -16,32 +16,33 @@
 <canvas id="canvas"></canvas>
 <script id="vertex_shader" type="x-shader/x-vertex">#version 300 es
   in vec3 a_position;
-  layout(location=4) in float a_color;
+  in vec2 a_uv;
 
   uniform mat4 uPMatrix;
   uniform mat4 uMVMatrix;
   uniform mat4 uCameraMatrix;
 
-  uniform vec3 uColor[4];
-  out lowp vec4 color;
+  out vec2 uv;
 
   void main(void) {
-      color = vec4(uColor[int(a_color)], 1.0);
+      uv = a_uv;
       gl_Position = uPMatrix * uCameraMatrix * uMVMatrix * vec4(a_position, 1.0);
   }
 
 </script>
 <script id="fragment_shader" type="x-shader/x-fragment">#version 300 es
   precision mediump float;
-
-  in vec4 color;
+  in vec2 uv;
   out vec4 finalColor;
 
   void main(void) {
-    finalColor = color;
+    // Square border
+    float c = (uv.x <= 0.1 || uv.x >= 0.9 || uv.y <= 0.1 || uv.y >= 0.9) ? 0.0 : 1.0;
+    finalColor = vec4(c, c, c, 1.0 - c);
   }
 
 </script>
+<script src="gl.js"></script>
 <script src="shader.js"></script>
 <script src="renderloop.js"></script>
 <script src="model.js"></script>

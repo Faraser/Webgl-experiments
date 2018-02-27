@@ -64,3 +64,32 @@ Primitives.GridAxis = class {
         return mesh;
     }
 };
+
+Primitives.Quad = class {
+    static createModel(gl) {
+        return new Model(Primitives.Quad.createMesh(gl));
+    }
+
+    static createMesh(gl) {
+        const aVert = [
+            -0.5, 0.5, 0,
+            -0.5, -0.5, 0,
+            0.5, -0.5, 0,
+            0.5, 0.5, 0
+        ];
+        const aUV = [
+            0, 0,
+            0, 1,
+            1, 1,
+            1, 0
+        ];
+        const aIndex = [
+            0, 1, 2,
+            2, 3, 0
+        ];
+        const mesh = gl.fCreateMeshVAO('Quad', aIndex, aVert, null, aUV);
+        mesh.noCulling = false;
+        mesh.doBlending = false;
+        return mesh;
+    }
+};
