@@ -88,8 +88,48 @@ Primitives.Quad = class {
             2, 3, 0
         ];
         const mesh = gl.fCreateMeshVAO('Quad', aIndex, aVert, null, aUV);
-        mesh.noCulling = false;
-        mesh.doBlending = false;
+        mesh.noCulling = true;
+        mesh.doBlending = true;
+        return mesh;
+    }
+};
+
+Primitives.MultiQuad = class {
+    static createModel(gl) {
+        return new Model(Primitives.MultiQuad.createMesh(gl));
+    }
+
+    static createMesh(gl) {
+        const aIndex = [];
+        const aUV = [];
+        const aVert = [];
+        const quadsCount = 10;
+
+        for (let i = 0; i < quadsCount; i++) {
+            // Calculate a random size, y rotation and position for the quad
+            const size = 0.2 + (0.8 * Math.random());
+            const half = size / 2;
+            const angle = Math.PI * 2 * Math.random();
+            const dx = half * Math.cos(angle);
+            const dy = half * Math.sin(angle);
+            const x = -2.5 + Math.random() * 5;
+            const y = -2.5 + Math.random() * 5;
+            const z = 2.5 - Math.random() * 5;
+            const p = i * 4;
+
+            // Build the 4 points of the quad
+            aVert.push(x - dx, y + half, z - dy); // TOP LEFT
+            aVert.push(x - dx, y - half, z - dy); // BOTTOM LEFT
+            aVert.push(x + dx, y - half, z + dy); // BOTTOM RIGHT
+            aVert.push(x + dx, y + half, z + dy); // TOP RIGHT
+
+            aUV.push(0, 0, 0, 1, 1, 1, 1, 0); // Quad's UV
+            aIndex.push(p, p + 1, p + 2, p + 2, p + 3, p) // Quad's Index
+        }
+
+        const mesh = gl.fCreateMeshVAO('MultiQuad', aIndex, aVert, null, aUV);
+        mesh.noCulling = true;
+        mesh.doBlending = true;
         return mesh;
     }
 };

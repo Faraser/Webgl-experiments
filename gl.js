@@ -14,7 +14,8 @@ function GLInstance(canvasId) {
         throw (new Error("Unable to initialize WebGL!"));
     }
 
-    gl.mMeshCache = []; // Cache all the mesh structs, easy to unload buffer if they all exist in one place
+    gl.mMeshCache = {}; // Cache all the mesh structs, easy to unload buffer if they all exist in one place
+    gl.mTextureCache = {};
 
     gl.cullFace(gl.BACK);
     gl.frontFace(gl.CCW);

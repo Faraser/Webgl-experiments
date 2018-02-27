@@ -21,7 +21,6 @@ function onRender(dt) {
     window.gShader.activate()
         .setCameraMatrix(gCamera.viewMatrix)
         .renderModel(window.gModel.preRender())
-        .renderModel(window.gModel2.preRender())
 }
 
 window.addEventListener('load', function() {
@@ -35,10 +34,7 @@ window.addEventListener('load', function() {
     window.gridModel = new Model(Primitives.GridAxis.createMesh(gl, true));
 
     window.gShader = new TestShader(gl, window.gCamera.projectionMatrix);
-    window.gModel = Primitives.Quad.createModel(gl);
-    window.gModel.setPosition(0, 1, 0).setScale(0.2, 0.2, 0.2);
-
-    window.gModel2 = new Model(gl.mMeshCache['Quad']);
+    window.gModel = Primitives.MultiQuad.createModel(gl);
 
     window.RLoop = new RenderLoop(onRender).start();
 });
