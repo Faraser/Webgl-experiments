@@ -135,11 +135,11 @@ Primitives.MultiQuad = class {
 };
 
 Primitives.Cube = class {
-    static createModel(gl) {
-        return new Model(Primitives.Cube.createMesh(gl, 1, 1, 1, 0, 0, 0));
+    static createModel(gl, name = 'Cube') {
+        return new Model(Primitives.Cube.createMesh(gl, name, 1, 1, 1, 0, 0, 0));
     }
 
-    static createMesh(gl, width, height, depth, x, y, z) {
+    static createMesh(gl, name, width, height, depth, x, y, z) {
         const w = width * 0.5, h = height * 0.5, d = depth * 0.5;
         const x0 = x - w, x1 = x + w, y0 = y - h, y1 = y + h, z0 = z - d, z1 = z + d;
 
@@ -204,4 +204,4 @@ Primitives.Cube = class {
         mesh.noCulling = true;	// TODO Only setting this true to view animations better.
         return mesh;
     }
-}
+};

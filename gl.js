@@ -129,6 +129,29 @@ function GLInstance(canvasId) {
         }
     };
 
+    gl.fLoadCubeMap = function(name, imgAry) {
+        if (imgAry.length !== 6) return null;
+
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+
+        for (let i=0; i<6; i++) {
+            gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, imgAry[i]);
+        }
+
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR); // Setup scaling
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR); // Setup scaling
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); // Stretch image to X position
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); // Stretch image to Y position
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE); // Stretch image to Z position
+
+        // gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+        gl.mTextureCache[name] = tex;
+        return tex;
+    };
+
     return gl;
 }
 

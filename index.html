@@ -15,6 +15,21 @@
 </style>
 <canvas id="canvas"></canvas>
 <img src="textures/UV_Grid_Lrg.jpg" id="imgTex" hidden/>
+
+<img src="textures/miramar_right.png" id="cube01_right" hidden>
+<img src="textures/miramar_left.png" id="cube01_left" hidden>
+<img src="textures/miramar_top.png" id="cube01_top" hidden>
+<img src="textures/miramar_bottom.png" id="cube01_bottom" hidden>
+<img src="textures/miramar_back.png" id="cube01_back" hidden>
+<img src="textures/miramar_front.png" id="cube01_front" hidden>
+
+<img src="textures/grimmnight_right.png" id="cube02_right" hidden>
+<img src="textures/grimmnight_left.png" id="cube02_left" hidden>
+<img src="textures/grimmnight_top.png" id="cube02_top" hidden>
+<img src="textures/grimmnight_bottom.png" id="cube02_bottom" hidden>
+<img src="textures/grimmnight_back.png" id="cube02_back" hidden>
+<img src="textures/grimmnight_front.png" id="cube02_front" hidden>
+
 <script id="vertex_shader" type="x-shader/x-vertex">#version 300 es
   in vec4 a_position;
   in vec3 a_norm;
@@ -50,9 +65,39 @@
   out vec4 finalColor;
 
   void main(void) {
-//      finalColor = color;
     finalColor = mix(color, texture(uMainTex, texCoord), 0.8f);
   }
+
+</script>
+<script id="sky_vshader" type="x-shader/x-vertex">#version 300 es
+  in vec4 a_position;
+  in vec2 a_uv;
+
+  uniform mat4 uPMatrix;
+  uniform mat4 uMVMatrix;
+  uniform mat4 uCameraMatrix;
+
+  out highp vec3 texCoord; // Interpolate UV values to the fragment shader
+
+  void main(void) {
+      texCoord = a_position.xyz;
+      gl_Position = uPMatrix * uCameraMatrix * uMVMatrix * vec4(a_position.xyz, 1.0);
+  }
+</script>
+<script id="sky_fshader" type="x-shader/x-fragment">#version 300 es
+precision mediump float;
+
+in highp vec3 texCoord;
+
+uniform samplerCube uDayTex;
+uniform samplerCube uNightTex;
+uniform float uTime;
+
+out vec4 finalColor;
+
+void main(void) {
+    finalColor = mix(texture(uDayTex, texCoord), texture(uNightTex, texCoord), abs(sin(uTime * 0.0005)));
+}
 </script>
 <script src="gl.js"></script>
 <script src="shader.js"></script>
