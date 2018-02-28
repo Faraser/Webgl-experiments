@@ -54,7 +54,7 @@ function GLInstance(canvasId) {
         return buf;
     };
 
-    gl.fCreateMeshVAO = function(name, aryInd, aryVert, aryNorm, aryUV) {
+    gl.fCreateMeshVAO = function(name, aryInd, aryVert, aryNorm, aryUV, vertLen = 3) {
         const rtn = { drawMode: gl.TRIANGLES };
 
         // Create and bind vao
@@ -64,13 +64,13 @@ function GLInstance(canvasId) {
         // Set up vertices
         if (aryVert !== undefined && aryVert !== null) {
             rtn.bufVertices = gl.createBuffer();
-            rtn.vertexComponentLen = 3;
+            rtn.vertexComponentLen = vertLen;
             rtn.vertexCount = aryVert.length / rtn.vertexComponentLen;
 
             gl.bindBuffer(gl.ARRAY_BUFFER, rtn.bufVertices);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(aryVert), gl.STATIC_DRAW);
             gl.enableVertexAttribArray(ATTR_POSITION_LOC);
-            gl.vertexAttribPointer(ATTR_POSITION_LOC, 3, gl.FLOAT, false, 0, 0);
+            gl.vertexAttribPointer(ATTR_POSITION_LOC, rtn.vertexComponentLen, gl.FLOAT, false, 0, 0);
         }
 
         // Set up normals
@@ -130,4 +130,25 @@ function GLInstance(canvasId) {
     };
 
     return gl;
+}
+
+class GLUtil {
+    static rgbToArray(...args) {
+        if (args.length === 0) return null;
+        const result = [];
+
+        for (let i = 0, c, p; i < args.length; i++) {
+            if (args[i].length < 6) continue;
+            c = args[i];
+            p = (c[0] === '#') ? 1 : 0;
+
+            result.push(
+                parseInt(c[p] + c[p + 1], 16) / 255.0,
+                parseInt(c[p + 2] + c[p + 3], 16) / 255.0,
+                parseInt(c[p + 4] + c[p + 5], 16) / 255.0
+            )
+        }
+
+        return result;
+    }
 }

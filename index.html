@@ -16,30 +16,42 @@
 <canvas id="canvas"></canvas>
 <img src="textures/UV_Grid_Lrg.jpg" id="imgTex" hidden/>
 <script id="vertex_shader" type="x-shader/x-vertex">#version 300 es
-  in vec3 a_position;
+  in vec4 a_position;
+  in vec3 a_norm;
   in vec2 a_uv;
 
   uniform mat4 uPMatrix;
   uniform mat4 uMVMatrix;
   uniform mat4 uCameraMatrix;
 
+  uniform vec3 uColor[6];
+  uniform float uTime;
+
+  out lowp vec4 color;
   out highp vec2 texCoord; // Interpolate UV values to the fragment shader
+
+  vec3 warp(vec3 p) {
+      return p + 0.2 * abs(cos(uTime * 0.003 + p.y * 2.0 + p.x * 2.0 + p.z)) * a_norm;
+  }
 
   void main(void) {
       texCoord = a_uv;
-      gl_Position = uPMatrix * uCameraMatrix * uMVMatrix * vec4(a_position, 1.0);
+      color = vec4(uColor[int(a_position.w)], 1.0);
+      gl_Position = uPMatrix * uCameraMatrix * uMVMatrix * vec4(warp(a_position.xyz), 1.0);
   }
 </script>
 <script id="fragment_shader" type="x-shader/x-fragment">#version 300 es
   precision mediump float;
 
+  in vec4 color;
   in highp vec2 texCoord;
   uniform sampler2D uMainTex;
 
   out vec4 finalColor;
 
   void main(void) {
-    finalColor = texture(uMainTex, vec2(texCoord.s, texCoord.t));
+//      finalColor = color;
+    finalColor = mix(color, texture(uMainTex, texCoord), 0.8f);
   }
 </script>
 <script src="gl.js"></script>

@@ -5,6 +5,10 @@ class TestShader extends Shader {
 
         super(gl, vertSrc, fragSrc);
 
+        this.uniformLoc.time = gl.getUniformLocation(this.program, 'uTime');
+        const uColor = gl.getUniformLocation(this.program, 'uColor');
+        gl.uniform3fv(uColor, new Float32Array(GLUtil.rgbToArray('#ff0000', '00ff00', '0000ff', '909090', 'c0c0c0', '404040')))
+
         this.setPerspective(pMatrix);
 
         this.mainTexture = -1; // Store texture id
@@ -13,6 +17,11 @@ class TestShader extends Shader {
 
     setTexture(texId) {
         this.mainTexture = texId;
+        return this;
+    }
+
+    setTime(t) {
+        this.gl.uniform1f(this.uniformLoc.time, t);
         return this;
     }
 
@@ -34,6 +43,7 @@ function onRender(dt) {
 
     window.gShader.activate()
         .preRender()
+        .setTime(performance.now())
         .setCameraMatrix(gCamera.viewMatrix)
         .renderModel(window.gModel.preRender())
 }
@@ -53,8 +63,8 @@ window.addEventListener('load', function() {
     window.gShader = new TestShader(gl, window.gCamera.projectionMatrix)
         .setTexture(gl.mTextureCache['tex001']);
 
-    window.gModel = Primitives.MultiQuad.createModel(gl)
+    window.gModel = Primitives.Cube.createModel(gl)
         .setPosition(0, 0.6, 0);
 
-    window.RLoop = new RenderLoop(onRender, 30).start();
+    window.RLoop = new RenderLoop(onRender, 60).start();
 });
