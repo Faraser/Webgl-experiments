@@ -18566,6 +18566,7 @@ f 3486/4196/3630 3490/4200/3695 3494/4201/3696
 <script src="transform.js"></script>
 <script src="camera.js"></script>
 <script src="shader_extra.js"></script>
+<script src="skymap.js"></script>
 <script src="objloader.js"></script>
 <script>
     class TestShader extends Shader {
@@ -18594,49 +18595,11 @@ f 3486/4196/3630 3490/4200/3695 3494/4201/3696
         }
     }
 
-    class SkymapShader extends Shader {
-        constructor(gl, pMatrix, dayTex, nightTex) {
-            const vertSrc = ShaderUtil.domShaderSrc('sky_vshader');
-            const fragSrc = ShaderUtil.domShaderSrc('sky_fshader');
-
-            super(gl, vertSrc, fragSrc);
-
-            this.uniformLoc.time = gl.getUniformLocation(this.program, 'uTime');
-            this.uniformLoc.dayTex = gl.getUniformLocation(this.program, 'uDayTex');
-            this.uniformLoc.nightTex = gl.getUniformLocation(this.program, 'uNightTex');
-
-            this.setPerspective(pMatrix);
-            this.texDay = dayTex;
-            this.texNight = nightTex;
-
-            gl.useProgram(null);
-        }
-
-        setTime(t) {
-            this.gl.uniform1f(this.uniformLoc.time, t);
-            return this;
-        }
-
-        preRender() {
-            this.gl.activeTexture(this.gl.TEXTURE0);
-            this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.texDay);
-            this.gl.uniform1i(this.uniformLoc.dayTex, 0);
-
-            this.gl.activeTexture(this.gl.TEXTURE1);
-            this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.texNight);
-            this.gl.uniform1i(this.uniformLoc.nightTex, 1);
-            return this;
-        }
-    }
-
     function onRender(dt) {
         window.gCamera.updateViewMatrix();
         window.gl.fClear();
 
-        window.gSkymapShader.activate().preRender()
-            .setCameraMatrix(window.gCamera.getTranslatelessMatrix())
-            .setTime(performance.now())
-            .renderModel(window.gSkymap);
+        window.gSkymap.render(window.gCamera);
 
         window.gridShader.activate()
             .setCameraMatrix(window.gCamera.viewMatrix)
@@ -18685,9 +18648,10 @@ f 3486/4196/3630 3490/4200/3695 3494/4201/3696
         window.gPirateModel = new Model(ObjLoader.domToMesh('pirateMesh', 'pirate_obj', true));
         window.gPirateModel.setScale(0.5, 0.5, 0.5);
 
-        window.gSkymap = new Model(Primitives.Cube.createMesh(gl, 'Skymap', 10, 10, 10, 0, 0, 0));
-        window.gSkymapShader = new SkymapShader(gl, window.gCamera.projectionMatrix,
-            gl.mTextureCache['skybox01'], gl.mTextureCache['skybox02']);
+        window.gSkymap = new Skymap(gl)
+            .setDayTexByDom('cube01_right', 'cube01_left', 'cube01_top', 'cube01_bottom', 'cube01_back', 'cube01_front' )
+            .setNightTexByDom('cube02_right', 'cube02_left', 'cube02_top', 'cube02_bottom', 'cube02_back', 'cube02_front')
+            .setTime(0.7).finalize();
 
         window.RLoop = new RenderLoop(onRender, 60).start();
     });

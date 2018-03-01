@@ -522,3 +522,9 @@ class Matrix4 {
     }
 }
 
+class MathUtil {
+    // Normalize x value to x range, then normalize to lerp the z range
+    static Map(x, xMin, xMax, zMin, zMax) {
+        return (x - xMin) / (xMax - xMin) * (zMax - zMin) + zMin;
+    }
+}
