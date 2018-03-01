@@ -39,33 +39,34 @@
   uniform mat4 uMVMatrix;
   uniform mat4 uCameraMatrix;
 
-  uniform vec3 uColor[6];
-  uniform float uTime;
+//  uniform vec3 uColor[6];
+//  uniform float uTime;
 
   out lowp vec4 color;
   out highp vec2 texCoord; // Interpolate UV values to the fragment shader
 
-  vec3 warp(vec3 p) {
-      return p + 0.2 * abs(cos(uTime * 0.003 + p.y * 2.0 + p.x * 2.0 + p.z)) * a_norm;
-  }
+//  vec3 warp(vec3 p) {
+//      return p + 0.2 * abs(cos(uTime * 0.003 + p.y * 2.0 + p.x * 2.0 + p.z)) * a_norm;
+//  }
 
   void main(void) {
       texCoord = a_uv;
-      color = vec4(uColor[int(a_position.w)], 1.0);
-      gl_Position = uPMatrix * uCameraMatrix * uMVMatrix * vec4(warp(a_position.xyz), 1.0);
+//      color = vec4(uColor[int(a_position.w)], 1.0);
+      gl_Position = uPMatrix * uCameraMatrix * uMVMatrix * vec4(a_position.xyz, 1.0);
   }
 </script>
 <script id="fragment_shader" type="x-shader/x-fragment">#version 300 es
   precision mediump float;
 
-  in vec4 color;
+//  in vec4 color;
   in highp vec2 texCoord;
   uniform sampler2D uMainTex;
 
   out vec4 finalColor;
 
   void main(void) {
-    finalColor = mix(color, texture(uMainTex, texCoord), 0.8f);
+//    finalColor = mix(color, texture(uMainTex, texCoord), 0.8f);
+    finalColor = texture(uMainTex, texCoord);
   }
 
 </script>
@@ -99,6 +100,46 @@ void main(void) {
     finalColor = mix(texture(uDayTex, texCoord), texture(uNightTex, texCoord), abs(sin(uTime * 0.0005)));
 }
 </script>
+
+<script type="text/plain" id="obj_file">
+# Blender v2.76 (sub 0) OBJ File: 'cube.blend'
+# www.blender.org
+mtllib cube.mtl
+o Cube
+v 1.000000 -1.000000 -1.000000
+v 1.000000 -1.000000 1.000000
+v -1.000000 -1.000000 1.000000
+v -1.000000 -1.000000 -1.000000
+v 1.000000 1.000000 -0.999999
+v 0.999999 1.000000 1.000001
+v -1.000000 1.000000 1.000000
+v -1.000000 1.000000 -1.000000
+vt 1.000000 1.000000
+vt 0.000000 1.000000
+vt 0.000000 0.000000
+vt 1.000000 0.000000
+vn 0.000000 -1.000000 0.000000
+vn 0.000000 1.000000 0.000000
+vn 1.000000 0.000000 0.000000
+vn -0.000000 0.000000 1.000000
+vn -1.000000 -0.000000 -0.000000
+vn 0.000000 0.000000 -1.000000
+usemtl Material
+s off
+f 2/1/1 3/2/1 4/3/1
+f 8/2/2 7/3/2 6/4/2
+f 5/1/3 6/2/3 2/3/3
+f 6/1/4 7/2/4 3/3/4
+f 3/4/5 7/1/5 8/2/5
+f 1/3/6 4/4/6 8/1/6
+f 1/4/1 2/1/1 4/3/1
+f 5/1/2 8/2/2 6/4/2
+f 1/4/3 5/1/3 2/3/3
+f 2/4/4 6/1/4 3/3/4
+f 4/3/5 3/4/5 8/2/5
+f 5/2/6 1/3/6 8/1/6
+</script>
+
 <script src="gl.js"></script>
 <script src="shader.js"></script>
 <script src="renderloop.js"></script>
@@ -108,5 +149,6 @@ void main(void) {
 <script src="transform.js"></script>
 <script src="camera.js"></script>
 <script src="shader_extra.js"></script>
+<script src="objloader.js"></script>
 <script src="index.js"></script>
 </body>

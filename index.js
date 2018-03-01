@@ -5,10 +5,6 @@ class TestShader extends Shader {
 
         super(gl, vertSrc, fragSrc);
 
-        this.uniformLoc.time = gl.getUniformLocation(this.program, 'uTime');
-        const uColor = gl.getUniformLocation(this.program, 'uColor');
-        gl.uniform3fv(uColor, new Float32Array(GLUtil.rgbToArray('#ff0000', '00ff00', '0000ff', '909090', 'c0c0c0', '404040')));
-
         this.setPerspective(pMatrix);
 
         this.mainTexture = -1; // Store texture id
@@ -17,11 +13,6 @@ class TestShader extends Shader {
 
     setTexture(texId) {
         this.mainTexture = texId;
-        return this;
-    }
-
-    setTime(t) {
-        this.gl.uniform1f(this.uniformLoc.time, t);
         return this;
     }
 
@@ -83,9 +74,8 @@ function onRender(dt) {
 
     window.gShader.activate()
         .preRender()
-        .setTime(performance.now())
         .setCameraMatrix(gCamera.viewMatrix)
-        .renderModel(window.gModel.preRender())
+        .renderModel(window.gModel2.preRender())
 }
 
 window.addEventListener('load', function() {
@@ -120,8 +110,8 @@ window.addEventListener('load', function() {
     window.gShader = new TestShader(gl, window.gCamera.projectionMatrix)
         .setTexture(gl.mTextureCache['tex001']);
 
-    window.gModel = Primitives.Cube.createModel(gl)
-        .setPosition(0, 0.6, 0);
+    window.gModel2 = new Model(ObjLoader.domToMesh('objCube', 'obj_file', true));
+    window.gModel2.setPosition(0, 0.6, 0).setScale(0.5, 0.5, 0.5);
 
     window.gSkymap = new Model(Primitives.Cube.createMesh(gl, 'Skymap', 10, 10, 10, 0, 0, 0));
     window.gSkymapShader = new SkymapShader(gl, window.gCamera.projectionMatrix,
