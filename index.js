@@ -29,10 +29,7 @@ function onRender(dt) {
     window.gl.fClear();
 
     window.gSkymap.render(window.gCamera);
-
-    window.gridShader.activate()
-        .setCameraMatrix(window.gCamera.viewMatrix)
-        .renderModel(window.gridModel.preRender());
+    window.gGridFloor.render(window.gCamera);
 
     window.gShader.activate()
         .preRender()
@@ -49,9 +46,6 @@ window.addEventListener('load', function() {
 
     gl.fLoadTexture('tex001', document.getElementById('imgTex'));
 
-    window.gridShader = new GridAxisShader(gl, window.gCamera.projectionMatrix);
-    window.gridModel = new Model(Primitives.GridAxis.createMesh(gl, true));
-
     window.gShader = new TestShader(gl, window.gCamera.projectionMatrix)
         .setTexture(gl.mTextureCache['tex001']);
 
@@ -62,6 +56,8 @@ window.addEventListener('load', function() {
         .setDayTexByDom('cube01_right', 'cube01_left', 'cube01_top', 'cube01_bottom', 'cube01_back', 'cube01_front' )
         .setNightTexByDom('cube02_right', 'cube02_left', 'cube02_top', 'cube02_bottom', 'cube02_back', 'cube02_front')
         .setTime(0.7).finalize();
+
+    window.gGridFloor = new GridFloor(gl);
 
     window.RLoop = new RenderLoop(onRender, 60).start();
 });
