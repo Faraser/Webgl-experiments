@@ -73,7 +73,7 @@ class VertexDebugger {
         this.mShader = ShaderUtil.createProgramFromText(this.gl, vertSrc, fragSrc, true);
         this.mUniformColor = this.gl.getUniformLocation(this.mShader, 'uColorAry');
         this.mUniformProj = this.gl.getUniformLocation(this.mShader, 'uPMatrix');
-        this.mUniformCamer = this.gl.getUniformLocation(this.mShader, 'uCameraMatrix');
+        this.mUniformCamera = this.gl.getUniformLocation(this.mShader, 'uCameraMatrix');
         this.mUniformModelV = this.gl.getUniformLocation(this.mShader, 'uMVMatrix');
         this.mUniformPointSize = this.gl.getUniformLocation(this.mShader, 'uPointSize');
         this.mUniformCameraPos = this.gl.getUniformLocation(this.mShader, 'uCameraPos');
@@ -99,7 +99,7 @@ class VertexDebugger {
 
         // Push uniform data
         this.gl.uniformMatrix4fv(this.mUniformProj, false, camera.projectionMatrix);
-        this.gl.uniformMatrix4fv(this.mUniformCamera, false, camer.viewMatrix);
+        this.gl.uniformMatrix4fv(this.mUniformCamera, false, camera.viewMatrix);
         this.gl.uniformMatrix4fv(this.mUniformModelV, false, this.transform.getViewMatrix());
         this.gl.uniform3fv(this.mUniformCameraPos, new Float32Array(camera.transform.position.getArray()));
 

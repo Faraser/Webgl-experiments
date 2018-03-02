@@ -33,36 +33,76 @@
 <img src="textures/grimmnight_front.png" id="cube02_front" hidden>
 
 <script id="vertex_shader" type="x-shader/x-vertex">#version 300 es
-  in vec4 a_position;
-  in vec3 a_norm;
-  in vec2 a_uv;
+    in vec4 a_position;
+    in vec3 a_norm;
+    in vec2 a_uv;
 
-  uniform mat4 uPMatrix;
-  uniform mat4 uMVMatrix;
-  uniform mat4 uCameraMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat4 uMVMatrix;
+    uniform mat4 uCameraMatrix;
+    uniform mat3 uNormMatrix;
+    uniform vec3 uCamPos;
 
-  out lowp vec4 color;
-  out highp vec2 texCoord; // Interpolate UV values to the fragment shader
+    out vec3 vPos;
+    out vec3 vNorm;
+    out vec3 vCamPos;
+    out highp vec2 vUV;
 
+    void main(void){
+        // Setup some fragment vars
+        vec4 pos = uMVMatrix * vec4(a_position.xyz, 1.0); // Need position in world space
+        vPos = pos.xyz;
+        vNorm = uNormMatrix * a_norm; // Nedd Norm Scaled/Rotated correctly
+        vUV = a_uv;
+        vCamPos = (inverse(uCameraMatrix) * vec4(uCamPos, 1.0)).xyz; // Need to Move CameraPos into wolrd space for specular calculation
 
-  void main(void) {
-      texCoord = a_uv;
-      gl_Position = uPMatrix * uCameraMatrix * uMVMatrix * vec4(a_position.xyz, 1.0);
-  }
+        gl_Position = uPMatrix * uCameraMatrix * pos;
+    }
 </script>
 <script id="fragment_shader" type="x-shader/x-fragment">#version 300 es
-  precision mediump float;
+    precision mediump float;
 
-//  in vec4 color;
-  in highp vec2 texCoord;
-  uniform sampler2D uMainTex;
+    uniform sampler2D uMainTex;
+    uniform vec3 uLightPos;
 
-  out vec4 finalColor;
+    in vec3 vPos;
+    in vec3 vNorm;
+    in vec3 vCamPos;
+    in highp vec2 vUV;
 
-  void main(void) {
-//    finalColor = mix(color, texture(uMainTex, texCoord), 0.8f);
-    finalColor = texture(uMainTex, texCoord);
-  }
+    out vec4 outColor;
+    void main(void){
+        // Setup basic Colors
+//        vec4 cBase = vec4(1.0, 0.5, 0.5, 1.0); // Texture (uMainTex, vUV)
+        vec4 cBase = texture(uMainTex, vUV);
+        vec3 cLight = vec3(1.0, 1.0, 1.0); // The color of light
+
+        // Setup ambient lighting
+        float ambientStrength = 0.15;
+        vec3 cAmbient = ambientStrength * cLight;
+
+        // Setup diffuse lighting
+        vec3 lightDir = normalize(uLightPos - vPos);
+
+        float diffAngle = max(dot(vNorm, lightDir), 0.0);
+        float diffuseStrength = 0.3;
+
+        vec3 cDiffuse = diffAngle * cLight * diffuseStrength;
+
+        // Setup specular lighting
+        float specularStrength = 0.2;
+        float specularShininess = 1.0;
+
+        vec3 camDir = normalize(vCamPos - vPos);
+        vec3 reflectDir = reflect(-lightDir, vNorm);
+
+        float spec = pow(max(dot(reflectDir, camDir), 0.0), specularShininess);
+        vec3 cSpecular = specularStrength * spec * cLight;
+
+        // Final
+        vec3 finalColor = (cAmbient + cDiffuse + cSpecular) * cBase.rgb; // Combined light strength applied it to the base color
+        outColor = vec4(finalColor, 1.0);
+    }
 
 </script>
 <img src="models/pirate_girl.png" id="pirate_girl" hidden>
@@ -18539,6 +18579,7 @@ f 3486/4196/3630 3490/4200/3695 3494/4201/3696
 <script src="skymap.js"></script>
 <script src="gridfloor.js"></script>
 <script src="objloader.js"></script>
+<script src="debug.js"></script>
 <script>
     class TestShader extends Shader {
         constructor(gl, pMatrix) {
@@ -18547,8 +18588,12 @@ f 3486/4196/3630 3490/4200/3695 3494/4201/3696
 
             super(gl, vertSrc, fragSrc);
 
-            this.setPerspective(pMatrix);
+            //Custom Uniforms
+            this.uniformLoc.lightpos = gl.getUniformLocation(this.program,"uLightPos");
+            this.uniformLoc.campos = gl.getUniformLocation(this.program,"uCamPos");
+            this.uniformLoc.matNormal = gl.getUniformLocation(this.program,"uNormMatrix");
 
+            this.setPerspective(pMatrix);
             this.mainTexture = -1; // Store texture id
             gl.useProgram(null);
         }
@@ -18558,13 +18603,35 @@ f 3486/4196/3630 3490/4200/3695 3494/4201/3696
             return this;
         }
 
+        setLightPos(obj) {
+            this.gl.uniform3fv(this.uniformLoc.lightpos, new Float32Array(obj.transform.position.getArray()));
+            return this;
+        }
+
+        setCameraPos(obj) {
+            this.gl.uniform3fv(this.uniformLoc.campos, new Float32Array(obj.transform.position.getArray()));
+            return this;
+        }
+
         preRender() {
             this.gl.activeTexture(this.gl.TEXTURE0);
             this.gl.bindTexture(this.gl.TEXTURE_2D, this.mainTexture);
             this.gl.uniform1i(this.uniformLoc.mainTexture, 0);
             return this;
         }
+
+        renderModel(model) {
+            this.gl.uniformMatrix3fv(this.uniformLoc.matNormal, false, model.transform.getNormalMatrix());
+            super.renderModel(model);
+            return this;
+        }
     }
+
+    let radius = 1.5,
+        angle = 0,
+        angleInc = 1,
+        yPos = 0,
+        yPosInc = 0.2;
 
     function onRender(dt) {
         window.gCamera.updateViewMatrix();
@@ -18573,13 +18640,23 @@ f 3486/4196/3630 3490/4200/3695 3494/4201/3696
         window.gSkymap.render(window.gCamera);
         window.gGridFloor.render(window.gCamera);
 
+        angle += angleInc * dt;
+        yPos += yPosInc * dt;
+
+        const x = radius * Math.cos(angle);
+        const z = radius * Math.sin(angle);
+        const y = MathUtil.Map(Math.sin(yPos), -1, 1, 0.1, 2);
+        mDebug.transform.position.set(x, y, z);
 
         window.gShader.activate()
             .preRender()
-            // .setTime(performance.now())
-            .setCameraMatrix(gCamera.viewMatrix)
-            // .renderModel(window.gModel.preRender())
-            .renderModel(window.gPirateModel.preRender())
+            .setCameraMatrix(window.gCamera.viewMatrix)
+            .setCameraPos(window.gCamera)
+            .setLightPos(window.mDebug)
+            // .renderModel(window.gModel.preRender());
+            .renderModel(window.gPirateModel.preRender());
+
+        window.mDebug.render(window.gCamera);
     }
 
     window.addEventListener('load', function() {
@@ -18602,6 +18679,7 @@ f 3486/4196/3630 3490/4200/3695 3494/4201/3696
             .setTime(0.7).finalize();
 
         window.gGridFloor = new GridFloor(gl);
+        window.mDebug = new VertexDebugger(gl, 10).addColor('#ff0000').addPoint(0, 0, 0, 0).finalize();
 
         window.RLoop = new RenderLoop(onRender, 60).start();
     });
