@@ -105,7 +105,6 @@ class Skymap {
                void main(void) { finalColor = mix(texture(uDayTex, texCoord), texture(uNightTex, texCoord), uTime);}`}
             `;
 
-        console.log(fragSrc)
         this.mShader = ShaderUtil.createProgramFromText(this.gl, vertSrc, fragSrc, true);
         this.mUniProj = this.gl.getUniformLocation(this.mShader, 'uPMatrix');
         this.mUniCamera = this.gl.getUniformLocation(this.mShader, 'uCameraMatrix');
@@ -113,7 +112,7 @@ class Skymap {
 
         if (this.mNightTex !== -1) {
             this.mUniNightTex = this.gl.getUniformLocation(this.mShader, 'uNightTex');
-            this.mUniTiem = this.gl.getUniformLocation(this.mShader, 'uTime');
+            this.mUniTime = this.gl.getUniformLocation(this.mShader, 'uTime');
         }
     }
 

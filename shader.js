@@ -166,3 +166,153 @@ class ShaderUtil {
         }
     }
 }
+
+class ShaderBuilder {
+    constructor(gl, vertShader, fragShader) {
+        this.program = vertShader.length < 20 ?
+                       ShaderUtil.domShaderProgram(gl, vertShader, fragShader, true) :
+                       ShaderUtil.createProgramFromText(gl, vertShader, fragShader, true);
+
+        if (this.program) {
+            this.gl = gl;
+            gl.useProgram(this.program);
+            this.mUniformList = {}; // List of uniforms that have been loaded in
+            this.mTextureList = []; // List of texture uniforms, Indexed {lox, tex}
+
+            this.noCulling = false;
+            this.doBlending = false;
+        }
+    }
+
+    prepareUniforms(...args) {
+        if (args.length % 2 !== 0) {
+            console.warn('prepareUniforms needs arguments to be in pairs');
+            return this;
+        }
+
+        for (let i = 0; i < args.length; i += 2) {
+            const loc = gl.getUniformLocation(this.program, args[i]);
+            if (loc) {
+                this.mUniformList[args[i]] = { loc: loc, type: args[i + 1] };
+            }
+        }
+
+        return this;
+    }
+
+    prepareTextures(...args) {
+        if (args.length % 2 !== 0) {
+            console.warn('prepareTextures needs arguments to be in pair');
+            return this;
+        }
+
+        for (let i = 0; i < args.length; i += 2) {
+            const tex = this.gl.mTextureCache[args[i + 1]];
+            if (!tex) {
+                console.warn(`Texture not found in cache ${args[i + 1]}`);
+                continue;
+            }
+
+            const loc = gl.getUniformLocation(this.program, args[i]);
+            if (loc) {
+                this.mTextureList.push({ loc: loc, tex: tex });
+            }
+        }
+
+        return this;
+    }
+
+    setUniforms(...args) {
+        if (arguments.length % 2 !== 0) {
+            console.warn('setUniforms needs arguments to be in pairs');
+            return this;
+        }
+
+        for (let i = 0; i < args.length; i += 2) {
+            const uniform = this.mUniformList[args[i]];
+            if (!uniform) {
+                console.warn('uniform not found ' + name);
+                return this;
+            }
+
+            switch (uniform.type) {
+                case '2fv' :
+                    this.gl.uniform2fv(uniform.loc, new Float32Array(args[i + 1]));
+                    break;
+                case '3fv':
+                    this.gl.uniform3fv(uniform.loc, new Float32Array(args[i + 1]));
+                    break;
+                case '4fv':
+                    this.gl.uniform4fv(uniform.loc, new Float32Array(args[i + 1]));
+                    break;
+                case 'mat4':
+                    this.gl.uniformMatrix4fv(uniform.loc, false, args[i+1]);
+                    break;
+                default:
+                    console.warn(`Unknown uniform type for ${args[i]}`);
+                    break;
+            }
+        }
+
+        return this;
+    }
+
+    activate() {
+        this.gl.useProgram(this.program);
+        return this;
+    }
+
+    deactivate() {
+        this.gl.useProgram(null);
+        return this;
+    }
+
+    dispose() {
+        if (this.gl.getParameter(this.gl.CURRENT_PROGRAM) === this.program) {
+            this.gl.useProgram(null);
+        }
+        this.gl.deleteProgram(this.program);
+    }
+
+    preRender(...args) {
+        this.gl.useProgram(this.program);
+
+        if (args.length > 0) {
+            this.setUniforms(...args);
+        }
+
+        if (this.mTextureList.length) {
+            for (let i=0; i<this.mTextureList.length; i++) {
+                const texSlot = this.gl['TEXTURE' + i];
+                this.gl.activeTexture(texSlot);
+                this.gl.bindTexture(this.gl.TEXTURE_2D, this.mTextureList[i].tex);
+                this.gl.uniform1i(this.mTextureList[i].loc, i);
+            }
+        }
+
+        return this;
+    }
+
+    renderModel(model, doShaderClose) {
+        this.setUniforms('uMVMatrix', model.transform.getViewMatrix());
+        this.gl.bindVertexArray(model.mesh.vao);
+
+        if (model.mesh.noCulling || this.noCulling) this.gl.disable(this.gl.CULL_FACE);
+        if (model.mesh.doBlending || this.doBlending) this.gl.enable(this.gl.BLEND);
+
+        if (model.mesh.indexCount) {
+            this.gl.drawElements(model.mesh.drawMode, model.mesh.indexCount, this.gl.UNSIGNED_SHORT, 0)
+        } else {
+            this.gl.drawArrays(model.mesh.drawMode, 0, model.mesh.vertexCount);
+        }
+
+        // Clean up
+        this.gl.bindVertexArray(null);
+        if (model.mesh.noCulling || this.noCulling) this.gl.enable(this.gl.CULL_FACE);
+        if (model.mesh.doBlending || this.doBlending) this.gl.disable(this.gl.BLEND);
+
+        if (doShaderClose) this.gl.useProgram(null);
+
+        return this;
+    }
+}
