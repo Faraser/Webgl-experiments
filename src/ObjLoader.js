@@ -12,6 +12,19 @@ class ObjLoader {
         return mesh;
     }
 
+    static srcToMesh(meshName, src, flipYUV, keepRawData) {
+        const d = ObjLoader.parseObjText(src, flipYUV) ;
+        const mesh = gl.fCreateMeshVAO(meshName, d[0], d[1], d[2], d[3], 3);
+
+        if (keepRawData) {
+            mesh.aIndex = d[0];
+            mesh.aVert = d[1];
+            mesh.aNorm = d[2];
+        }
+
+        return mesh;
+    }
+
     static parseFromDom(elemId, flipYUV) {
         return ObjLoader.parseObjText(document.getElementById(elemId).innerHTML, flipYUV);
     }

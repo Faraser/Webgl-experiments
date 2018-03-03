@@ -40,4 +40,5 @@ window.addEventListener('load', function() {
         .start();
 
     window.RLoop = new RenderLoop(onRender);
+
 });
