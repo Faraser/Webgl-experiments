@@ -11,9 +11,16 @@ function onRender(dt) {
 
 function onReady() {
     window.gShader = new ShaderBuilder(gl, 'vertex_shader', 'fragment_shader')
-        .prepareUniforms('uPMatrix', 'mat4', 'uMVMatrix', 'mat4', 'uCameraMatrix','mat4')
-        .prepareTextures('uTexture', 'tex001')
-        .setUniforms('uPMatrix', window.gCamera.projectionMatrix);
+        .prepareUniforms(
+            'uPMatrix', 'mat4',
+            'uMVMatrix', 'mat4',
+            'uCameraMatrix', 'mat4',
+            'uColors', '3fv'
+        )
+        .prepareTextures('uMask_A', 'mask_a', 'uMask_B', 'mask_b')
+        .setUniforms('uPMatrix', window.gCamera.projectionMatrix,
+            'uColors', GLUtil.rgbToArray('880000', 'ff9999')
+        );
 
     window.gModel = Primitives.Cube.createModel(gl, 'Cube', true)
         .setPosition(0, 0.6, 0);
@@ -36,7 +43,11 @@ window.addEventListener('load', function() {
     window.gGridFloor = new GridFloor(gl);
 
     Resources.setup(gl, onReady)
-        .loadTexture('tex001', 'textures/UV_Grid_Lrg.jpg')
+    // .loadTexture('tex001', 'textures/UV_Grid_Lrg.jpg')
+        .loadTexture(
+            'mask_a', 'textures/mask_square.png',
+            'mask_b', 'textures/mask_cornercircles.png'
+        )
         .start();
 
     window.RLoop = new RenderLoop(onRender);
