@@ -218,7 +218,7 @@
         window.mDebug = new VertexDebugger(gl, 10).addColor('#ff0000').addPoint(0, 0, 0, 0).finalize();
 
         Resources.setup(gl, onReady)
-            .loadTexture('pirate_girl', 'models/pirate_girl.png')
+            .loadTexture('pirate_girl', { src: 'models/pirate_girl.png', doYFlip: true })
             .loadObjFile('pirate_girl', 'models/pirate_girl.obj')
             .start();
 

@@ -6,7 +6,11 @@ function onRender(dt) {
     window.gGridFloor.render(window.gCamera);
 
     gShader.preRender('uCameraMatrix', window.gCamera.viewMatrix)
-        .renderModel(gModel.preRender(), false)
+        // .renderModel(gModel.preRender(), false)
+
+    for (let i=0; i < window.gCubes.length; i++) {
+        window.gShader.setUniforms('uFaces', window.texMap[i]).renderModel(gCubes[i].preRender());
+    }
 }
 
 function onReady() {
@@ -15,15 +19,27 @@ function onReady() {
             'uPMatrix', 'mat4',
             'uMVMatrix', 'mat4',
             'uCameraMatrix', 'mat4',
-            'uColors', '3fv'
+            'uColors', '3fv',
+            'uFaces', '2fv'
         )
-        .prepareTextures('uMask_A', 'mask_a', 'uMask_B', 'mask_b')
-        .setUniforms('uPMatrix', window.gCamera.projectionMatrix,
-            'uColors', GLUtil.rgbToArray('880000', 'ff9999')
-        );
+        .prepareTextures('uAtlas', 'atlas')
+        .setUniforms('uPMatrix', window.gCamera.projectionMatrix);
 
-    window.gModel = Primitives.Cube.createModel(gl, 'Cube', true)
-        .setPosition(0, 0.6, 0);
+    window.gCubes = [];
+    window.texMap = [
+        [3, 0, 3, 0, 3, 0, 2, 0, 3, 0, 2, 9], // GrassDirt
+        [4, 1, 4, 1, 4, 1, 5, 1, 4, 1, 5, 1], // Log
+        [11, 1, 10, 1, 10, 1, 9, 1, 10, 1, 9, 1], // Chest
+        [7, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 6], // Pumpkin
+        [8, 8, 8, 8, 8, 8, 9, 8, 8, 8, 9, 8], // WaterMelon
+        [8, 0, 8, 0, 8, 0, 10, 0, 8, 0, 9, 0] // TNT
+    ];
+
+    const cubeMesh = Primitives.Cube.createMesh(window.gl, 'Cube', 1, 1, 1, 0, 0, 0, false);
+    for (let i=0; i < 6; i++) {
+        const model = new Model(cubeMesh).setPosition((i % 3) * 2, 0.6, Math.floor(i / 3) * -2);
+        window.gCubes.push(model);
+    }
 
     window.RLoop.start();
 }
@@ -43,11 +59,7 @@ window.addEventListener('load', function() {
     window.gGridFloor = new GridFloor(gl);
 
     Resources.setup(gl, onReady)
-    // .loadTexture('tex001', 'textures/UV_Grid_Lrg.jpg')
-        .loadTexture(
-            'mask_a', 'textures/mask_square.png',
-            'mask_b', 'textures/mask_cornercircles.png'
-        )
+        .loadTexture('atlas', 'textures/atlas_mindcraft.png')
         .start();
 
     window.RLoop = new RenderLoop(onRender);

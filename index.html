@@ -40,30 +40,30 @@
     uniform mat4 uPMatrix;
     uniform mat4 uMVMatrix;
     uniform mat4 uCameraMatrix;
+    uniform vec2[6] uFaces;
+
+    const float size = 1.0 / 16.0;
 
     out highp vec2 vUV;
 
     void main(void){
-        vUV = a_uv;
-        vec4 pos = uMVMatrix * vec4(a_position.xyz, 1.0);
-
-        gl_Position = uPMatrix * uCameraMatrix * pos;
+        int f = int(a_position.w);
+        float u = uFaces[f].x * size + a_uv.x * size;
+        float v = uFaces[f].y * size + a_uv.y * size;
+        vUV = vec2(u, v);
+        gl_Position = uPMatrix * uCameraMatrix * uMVMatrix * vec4(a_position.xyz, 1.0);
     }
 </script>
 <script id="fragment_shader" type="x-shader/x-fragment">#version 300 es
     precision mediump float;
 
-    uniform sampler2D uMask_A;
-    uniform sampler2D uMask_B;
+    uniform sampler2D uAtlas;
     uniform vec3[2] uColors;
     in highp vec2 vUV;
     out vec4 outColor;
 
     void main(void){
-        vec4 mask_a = texture(uMask_A, vUV * 4.0) * 0.15;
-        vec4 mask_b = texture(uMask_B, vUV * 2.0);
-        float c = min(mask_a.r + mask_b.r, 1.0);
-        outColor = vec4(mix(uColors[0], uColors[1], c), 1.0);
+        outColor = texture(uAtlas, vUV);
     }
 
 </script>

@@ -13,7 +13,8 @@ class Resources {
 
     static loadTexture(...args) {
         for (let i = 0; i < args.length; i += 2) {
-            Resources.Queue.push({ type: 'img', name: args[i], src: args[i + 1] })
+            const options = typeof args[i + 1] === 'string' ? { src: args[i + 1] } : args[i + 1];
+            Resources.Queue.push({ type: 'img', name: args[i], src: options.src, doYFlip: options.doYFlip })
         }
 
         return this;
@@ -62,7 +63,7 @@ class Resources {
     static onDownloadSuccess() {
         if (this instanceof Image) {
             const data = this.queueData;
-            Resources.gl.fLoadTexture(data.name, this, true);
+            Resources.gl.fLoadTexture(data.name, this, data.doYFlip);
         }
 
         if (this.type === 'obj') {
