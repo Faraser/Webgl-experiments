@@ -44,12 +44,12 @@ class Camera {
         if (this.mode === Camera.MODE_FREE) {
             this.transform.matView.reset()
                 .vtranslate(this.transform.position)
-                .rotateX(this.transform.rotation.x * Transform.deg2Rad)
-                .rotateY(this.transform.rotation.y * Transform.deg2Rad);
+                .rotateY(this.transform.rotation.y * Transform.deg2Rad)
+                .rotateX(this.transform.rotation.x * Transform.deg2Rad);
         } else {
             this.transform.matView.reset()
-                .rotateX(this.transform.rotation.x * Transform.deg2Rad)
                 .rotateY(this.transform.rotation.y * Transform.deg2Rad)
+                .rotateX(this.transform.rotation.x * Transform.deg2Rad)
                 .vtranslate(this.transform.position);
         }
 

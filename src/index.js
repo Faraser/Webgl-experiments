@@ -2,13 +2,13 @@ function onRender(dt) {
     window.gCamera.updateViewMatrix();
     window.gl.fClear();
 
-    window.gSkymap.render(window.gCamera);
+    // window.gSkymap.render(window.gCamera);
     window.gGridFloor.render(window.gCamera);
 
-    gl.fUpdateTexture('vid', Resources.Videos['vid'], false, true);
+    window.gShader.preRender('uCameraMatrix', window.gCamera.viewMatrix)
+        .renderModel(gModel.preRender(), false);
 
-    gShader.preRender('uCameraMatrix', window.gCamera.viewMatrix)
-        .renderModel(gModel.preRender(), false)
+    window.mDebugLine.render(window.gCamera);
 
 }
 
@@ -19,16 +19,17 @@ function onReady() {
             'uMVMatrix', 'mat4',
             'uCameraMatrix', 'mat4'
         )
-        .prepareTextures('uTex', 'vid')
         .setUniforms('uPMatrix', window.gCamera.projectionMatrix);
 
-    window.gModel = Primitives.Cube.createModel(gl, 'Cube', true).setPosition(0, 0.6, 0);
+    window.gModel = Terrain.createModel(gl, true);
+
+    window.mDebugLine = new LineDebugger(gl).addColor('#00FF00').addMeshNormal(0, 0.3, window.gModel.mesh).finalize();
 
     window.RLoop.start();
 }
 
 window.addEventListener('load', function() {
-    const gl = window.gl = GLInstance('canvas').fSetSize(500, 500).fClear();
+    const gl = window.gl = GLInstance('canvas').fFitScreen(0.95, 0.9).fClear();
 
     window.gCamera = new Camera(gl);
     window.gCamera.transform.position.set(0, 1, 3);
@@ -41,10 +42,8 @@ window.addEventListener('load', function() {
 
     window.gGridFloor = new GridFloor(gl);
 
-    Resources.setup(gl, onReady)
-        .loadVideoTexture('vid', 'textures/shark_3d_360.mp4')
-        .start();
-
     window.RLoop = new RenderLoop(onRender);
+
+    onReady();
 
 });
