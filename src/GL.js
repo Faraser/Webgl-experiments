@@ -108,8 +108,13 @@ function GLInstance(canvasId) {
         return rtn;
     };
 
-    gl.fLoadTexture = function(name, img, doYFlip) {
-        const tex = gl.createTexture();
+    gl.fLoadTexture = function(name, img, doYFlip, noMips) {
+        gl.mTextureCache[name] = gl.createTexture();
+        return gl.fUpdateTexture(name, img, doYFlip, noMips);
+    };
+
+    gl.fUpdateTexture = function(name, img, doYFlip, noMips) {
+        const tex = gl.mTextureCache[name];
         if (doYFlip) {
             gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); // Flip the texture by the Y position
         }
@@ -117,16 +122,24 @@ function GLInstance(canvasId) {
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img); // Push image to GPU
 
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); // Setup up scaling
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST); // Setup down scaling
-        gl.generateMipmap(gl.TEXTURE_2D);
+        if (!noMips) {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); // Setup up scaling
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST); // Setup down scaling
+            gl.generateMipmap(gl.TEXTURE_2D);
+        } else {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        }
 
         gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.mTextureCache[name] = tex;
 
         if (doYFlip) {
             gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); // Stop flipping textures
         }
+
+        return tex;
     };
 
     gl.fLoadCubeMap = function(name, imgAry) {

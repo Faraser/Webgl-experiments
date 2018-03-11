@@ -5,12 +5,11 @@ function onRender(dt) {
     window.gSkymap.render(window.gCamera);
     window.gGridFloor.render(window.gCamera);
 
-    gShader.preRender('uCameraMatrix', window.gCamera.viewMatrix)
-        // .renderModel(gModel.preRender(), false)
+    gl.fUpdateTexture('vid', Resources.Videos['vid'], false, true);
 
-    for (let i=0; i < window.gCubes.length; i++) {
-        window.gShader.setUniforms('uFaces', window.texMap[i]).renderModel(gCubes[i].preRender());
-    }
+    gShader.preRender('uCameraMatrix', window.gCamera.viewMatrix)
+        .renderModel(gModel.preRender(), false)
+
 }
 
 function onReady() {
@@ -18,28 +17,12 @@ function onReady() {
         .prepareUniforms(
             'uPMatrix', 'mat4',
             'uMVMatrix', 'mat4',
-            'uCameraMatrix', 'mat4',
-            'uColors', '3fv',
-            'uFaces', '2fv'
+            'uCameraMatrix', 'mat4'
         )
-        .prepareTextures('uAtlas', 'atlas')
+        .prepareTextures('uTex', 'vid')
         .setUniforms('uPMatrix', window.gCamera.projectionMatrix);
 
-    window.gCubes = [];
-    window.texMap = [
-        [3, 0, 3, 0, 3, 0, 2, 0, 3, 0, 2, 9], // GrassDirt
-        [4, 1, 4, 1, 4, 1, 5, 1, 4, 1, 5, 1], // Log
-        [11, 1, 10, 1, 10, 1, 9, 1, 10, 1, 9, 1], // Chest
-        [7, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 6], // Pumpkin
-        [8, 8, 8, 8, 8, 8, 9, 8, 8, 8, 9, 8], // WaterMelon
-        [8, 0, 8, 0, 8, 0, 10, 0, 8, 0, 9, 0] // TNT
-    ];
-
-    const cubeMesh = Primitives.Cube.createMesh(window.gl, 'Cube', 1, 1, 1, 0, 0, 0, false);
-    for (let i=0; i < 6; i++) {
-        const model = new Model(cubeMesh).setPosition((i % 3) * 2, 0.6, Math.floor(i / 3) * -2);
-        window.gCubes.push(model);
-    }
+    window.gModel = Primitives.Cube.createModel(gl, 'Cube', true).setPosition(0, 0.6, 0);
 
     window.RLoop.start();
 }
@@ -59,7 +42,7 @@ window.addEventListener('load', function() {
     window.gGridFloor = new GridFloor(gl);
 
     Resources.setup(gl, onReady)
-        .loadTexture('atlas', 'textures/atlas_mindcraft.png')
+        .loadVideoTexture('vid', 'textures/shark_3d_360.mp4')
         .start();
 
     window.RLoop = new RenderLoop(onRender);
