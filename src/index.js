@@ -2,28 +2,23 @@ function onRender(dt) {
     window.gCamera.updateViewMatrix();
     window.gl.fClear();
 
+    UBO.Cache['MatTransform'].update('matCameraView', window.gCamera.viewMatrix);
+
     // window.gSkymap.render(window.gCamera);
     window.gGridFloor.render(window.gCamera);
 
-    window.gShader.preRender('uCameraMatrix', window.gCamera.viewMatrix)
+    window.gShader
+        .preRender()
         .renderModel(gModel.preRender(), false);
-
-    window.mDebugLine.render(window.gCamera);
-
 }
 
 function onReady() {
     window.gShader = new ShaderBuilder(gl, 'vertex_shader', 'fragment_shader')
-        .prepareUniforms(
-            'uPMatrix', 'mat4',
-            'uMVMatrix', 'mat4',
-            'uCameraMatrix', 'mat4'
-        )
-        .setUniforms('uPMatrix', window.gCamera.projectionMatrix);
+        .prepareUniforms('uMVMatrix', 'mat4')
+        .prepareUniformBlocks(UBO.Cache['MatTransform'], 0);
 
-    window.gModel = Terrain.createModel(gl, true);
-
-    window.mDebugLine = new LineDebugger(gl).addColor('#00FF00').addMeshNormal(0, 0.3, window.gModel.mesh).finalize();
+    const cubeMesh = Primitives.Cube.createMesh(gl, 'Cube', 1, 1, 1, 0, 0, 0, false);
+    window.gModel = new Model(cubeMesh).setPosition(0, 0.5, 0);
 
     window.RLoop.start();
 }
@@ -41,6 +36,13 @@ window.addEventListener('load', function() {
         .setTime(0.7).finalize();
 
     window.gGridFloor = new GridFloor(gl);
+
+    UBO.create(gl, 'MatTransform', 1, [
+        { name: 'matProjection', type: 'mat4' },
+        { name: 'matCameraView', type: 'mat4' }
+    ]);
+
+    UBO.Cache['MatTransform'].update('matProjection', gCamera.projectionMatrix);
 
     window.RLoop = new RenderLoop(onRender);
 

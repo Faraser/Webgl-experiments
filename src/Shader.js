@@ -200,6 +200,14 @@ class ShaderBuilder {
         return this;
     }
 
+    prepareUniformBlocks(...args) {
+        for (let i = 0; i < args.length; i += 2) {
+            this.gl.uniformBlockBinding(this.program, args[i + 1], args[i].blockPoint);
+        }
+
+        return this;
+    }
+
     prepareTextures(...args) {
         if (args.length % 2 !== 0) {
             console.warn('prepareTextures needs arguments to be in pair');
@@ -246,7 +254,7 @@ class ShaderBuilder {
                     this.gl.uniform4fv(uniform.loc, new Float32Array(args[i + 1]));
                     break;
                 case 'mat4':
-                    this.gl.uniformMatrix4fv(uniform.loc, false, args[i+1]);
+                    this.gl.uniformMatrix4fv(uniform.loc, false, args[i + 1]);
                     break;
                 default:
                     console.warn(`Unknown uniform type for ${args[i]}`);
@@ -282,7 +290,7 @@ class ShaderBuilder {
         }
 
         if (this.mTextureList.length) {
-            for (let i=0; i<this.mTextureList.length; i++) {
+            for (let i = 0; i < this.mTextureList.length; i++) {
                 const texSlot = this.gl['TEXTURE' + i];
                 this.gl.activeTexture(texSlot);
                 this.gl.bindTexture(this.gl.TEXTURE_2D, this.mTextureList[i].tex);
@@ -316,3 +324,131 @@ class ShaderBuilder {
         return this;
     }
 }
+
+class UBO {
+    constructor(gl, blockName, blockPoint, bufSize, aryCalc) {
+        this.items = {};
+        this.keys = [];
+
+        for (let i = 0; i < aryCalc.length; i++) {
+            this.items[aryCalc[i].name] = {
+                offset: aryCalc[i].offset,
+                dataLen: aryCalc[i].dataLen,
+                chunkLen: aryCalc[i].chunkLen
+            };
+            this.keys[i] = aryCalc[i].name;
+        }
+
+        this.gl = gl;
+        this.blockName = blockName;
+        this.blockPoint = blockPoint;
+
+        this.buf = gl.createBuffer();
+        gl.bindBuffer(gl.UNIFORM_BUFFER, this.buf);
+        gl.bufferData(gl.UNIFORM_BUFFER, bufSize, gl.DYNAMIC_DRAW);
+        gl.bindBuffer(gl.UNIFORM_BUFFER, null);
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, blockPoint, this.buf);
+    }
+
+    update(name, data) {
+        if (!(data instanceof Float32Array)) {
+            data = new Float32Array(Array.isArray(data) ? data : [data]);
+        }
+
+        this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, this.buf);
+        this.gl.bufferSubData(this.gl.UNIFORM_BUFFER, this.items[name].offset, data, 0, null);
+        this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null);
+        return this;
+    }
+
+    static create(gl, blockName, blockPoint, ary) {
+        var bufSize = UBO.calculate(ary);
+        UBO.Cache[blockName] = new UBO(gl, blockName, blockPoint, bufSize, ary);
+        UBO.debugVisualize(UBO.Cache[blockName]);
+    }
+
+    static getSize(type) {
+        switch (type) {
+            case 'mat4':
+                return 16 * 4;
+            case 'mat3':
+                return 16 * 3;
+            case 'vec2':
+                return 8;
+            case 'f':
+            case'i':
+            case 'b':
+                return 4;
+            case 'vec3':
+            case 'vec4':
+                return 16;
+            default:
+                return 0;
+        }
+    }
+
+    static calculate(ary) {
+        let chunk = 16; // Data size in bytes, UBO using layout std140 needs to build out the struct in chunks of 16 bytes
+        let offset = 0; // Offset in the buffer allocation
+        for (let i = 0; i < ary.length; i++) {
+            const size = !ary[i].arylen || ary[i].arylen === 0 ? // Data size of the current type
+                         UBO.getSize(ary[i].type) :
+                         ary[i].arylen * 16;
+            const tsize = chunk - size; // Temp size, how much of the chunk is available after removing the data size from it
+
+            // Chunk has been overdrawn when it already has some data reserved for it
+            if (tsize < 0 && chunk < 16) {
+                offset += chunk; // Add remaining chunk to offset
+                if (i > 0) ary[i - 1].chunkLen += chunk; // So the remaining chunk can be used by the last variable
+                chunk = 16; // Reset chunk
+            } else if (tsize < 0 && chunk === 16) {
+                // Do nothing in case data length is >= unused chunk size
+            } else if (tsize === 0) {
+                chunk = 16;
+            } else {
+                chunk -= size;
+            }
+
+            ary[i].offset = offset;
+            ary[i].chunkLen = size;
+            ary[i].dataLen = size;
+
+            offset += size;
+        }
+
+        if (offset % 16 !== 0) {
+            ary[ary.length - 1].chunkLen += chunk;
+            offset += chunk;
+        }
+
+        console.log("UBO Buffer size ", offset);
+        return offset;
+    }
+
+    static debugVisualize(ubo) {
+        let str = '';
+        let tchunk = 0;
+
+        for (let i = 0; i < ubo.keys.length; i++) {
+            const item = ubo.items[ubo.keys[i]];
+            console.log(ubo.keys[i], item);
+
+            const chunk = item.chunkLen / 4;
+            for (let x = 0; x < chunk; x++) {
+                str += (x === 0 || x === chunk - 1) ? '|.' + i + '.' : '|...';
+                tchunk++;
+                if (tchunk % 4 === 0) {
+                    str += '| ~ ';
+                }
+            }
+        }
+
+        if (tchunk % 4 !== 0) {
+            str += '|'
+        }
+
+        console.log(str);
+    }
+}
+
+UBO.Cache = [];
