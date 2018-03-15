@@ -367,23 +367,24 @@ class UBO {
         UBO.debugVisualize(UBO.Cache[blockName]);
     }
 
-    static getSize(type) {
+    static getSize(type) { // [aligment, size]
         switch (type) {
             case 'mat4':
-                return 16 * 4;
+                return [64, 64];
             case 'mat3':
-                return 16 * 3;
+                return [48, 48];
             case 'vec2':
-                return 8;
+                return [8, 8];
             case 'f':
             case'i':
             case 'b':
-                return 4;
+                return [4, 4];
             case 'vec3':
+                return [16, 12]; // Special case
             case 'vec4':
-                return 16;
+                return [16, 16];
             default:
-                return 0;
+                return [0, 0];
         }
     }
 
@@ -393,8 +394,8 @@ class UBO {
         for (let i = 0; i < ary.length; i++) {
             const size = !ary[i].arylen || ary[i].arylen === 0 ? // Data size of the current type
                          UBO.getSize(ary[i].type) :
-                         ary[i].arylen * 16;
-            const tsize = chunk - size; // Temp size, how much of the chunk is available after removing the data size from it
+                         [ary[i].arylen * 16, ary[i].arylen * 16];
+            const tsize = chunk - size[0]; // Temp size, how much of the chunk is available after removing the data size from it
 
             // Chunk has been overdrawn when it already has some data reserved for it
             if (tsize < 0 && chunk < 16) {
@@ -404,22 +405,26 @@ class UBO {
             } else if (tsize < 0 && chunk === 16) {
                 // Do nothing in case data length is >= unused chunk size
             } else if (tsize === 0) {
-                chunk = 16;
+                if (ary[i].type === 'vec3' && chunk === 16) {
+                    chunk -= size[1];
+                } else {
+                    chunk = 16;
+                }
             } else {
-                chunk -= size;
+                chunk -= size[1];
             }
 
             ary[i].offset = offset;
-            ary[i].chunkLen = size;
-            ary[i].dataLen = size;
+            ary[i].chunkLen = size[1];
+            ary[i].dataLen = size[1];
 
-            offset += size;
+            offset += size[1];
         }
-
-        if (offset % 16 !== 0) {
-            ary[ary.length - 1].chunkLen += chunk;
-            offset += chunk;
-        }
+        //
+        // if (offset % 16 !== 0) {
+        //     ary[ary.length - 1].chunkLen += chunk;
+        //     offset += chunk;
+        // }
 
         console.log("UBO Buffer size ", offset);
         return offset;
